@@ -1,0 +1,158 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <chrono>
+#include <cstdlib>
+#include <ctime>
+using namespace std;
+using namespace std::chrono;
+
+// -----------------------------
+// Bubble Sort
+void bubbleSort(vector<int>& arr) {
+    int n = arr.size();
+    for (int i = 0; i < n-1; ++i)
+        for (int j = 0; j < n-i-1; ++j)
+            if (arr[j] > arr[j+1])
+                swap(arr[j], arr[j+1]);
+}
+
+// -----------------------------
+// Merge Sort
+void merge(vector<int>& arr, int l, int m, int r) {
+    int n1 = m - l + 1;
+    int n2 = r - m;
+    vector<int> L(n1), R(n2);
+
+    for(int i = 0; i < n1; ++i) L[i] = arr[l + i];
+    for(int j = 0; j < n2; ++j) R[j] = arr[m + 1 + j];
+
+    int i = 0, j = 0, k = l;
+    while(i < n1 && j < n2)
+        arr[k++] = (L[i] <= R[j]) ? L[i++] : R[j++];
+    while(i < n1) arr[k++] = L[i++];
+    while(j < n2) arr[k++] = R[j++];
+}
+
+void mergeSort(vector<int>& arr, int l, int r) {
+    if(l < r) {
+        int m = l + (r-l)/2;
+        mergeSort(arr, l, m);
+        mergeSort(arr, m+1, r);
+        merge(arr, l, m, r);
+    }
+}
+
+// -----------------------------
+// Quick Sort - مع محور عشوائي
+int partition(vector<int>& arr, int low, int high) {
+    int randomIndex = low + rand() % (high - low + 1);
+    swap(arr[randomIndex], arr[high]);
+
+    int pivot = arr[high];
+    int i = low - 1;
+    for(int j = low; j < high; ++j)
+        if(arr[j] <= pivot)
+            swap(arr[++i], arr[j]);
+    swap(arr[i+1], arr[high]);
+    return i+1;
+}
+
+void quickSort(vector<int>& arr, int low, int high) {
+    if(low < high) {
+        int pi = partition(arr, low, high);
+        quickSort(arr, low, pi-1);
+        quickSort(arr, pi+1, high);
+    }
+}
+
+// -----------------------------
+// توليد البيانات
+vector<int> generateData(int size, const string& type) {
+    vector<int> data(size);
+    if(type == "random") {
+        for(int i = 0; i < size; ++i)
+            data[i] = rand() % 10000;
+    }
+    else if(type == "sorted") {
+        for(int i = 0; i < size; ++i)
+            data[i] = i;
+    }
+    else if(type == "reversed") {
+        for(int i = 0; i < size; ++i)
+            data[i] = size - i;
+    }
+    else if(type == "partial") {
+        for(int i = 0; i < size / 2; ++i)
+            data[i] = i;
+        for(int i = size / 2; i < size; ++i)
+            data[i] = rand() % 10000;
+    }
+    return data;
+}
+
+// -----------------------------
+// قياس الزمن
+double measureTime(void (*sortFunc)(vector<int>&), const vector<int>& data) {
+    vector<int> temp = data;
+    auto start = high_resolution_clock::now();
+    sortFunc(temp);
+    auto end = high_resolution_clock::now();
+    return duration<double>(end - start).count();
+}
+
+double measureTimeMerge(const vector<int>& data) {
+    vector<int> temp = data;
+    auto start = high_resolution_clock::now();
+    mergeSort(temp, 0, temp.size()-1);
+    auto end = high_resolution_clock::now();
+    return duration<double>(end - start).count();
+}
+
+double measureTimeQuick(const vector<int>& data) {
+    vector<int> temp = data;
+    auto start = high_resolution_clock::now();
+    quickSort(temp, 0, temp.size()-1);
+    auto end = high_resolution_clock::now();
+    return duration<double>(end - start).count();
+}
+
+// -----------------------------
+// تنفيذ التجربة
+void runExperiment() {
+    vector<int> sizes = {100, 1000, 5000};
+    vector<string> types = {"random", "sorted", "reversed", "partial"};
+
+    for(int size : sizes) {
+        for(const string& type : types) {
+            cout << "\nData Size: " << size << ", Type: " << type << endl;
+
+            vector<int> data = generateData(size, type);
+
+            // Bubble Sort
+            double totalTime = 0;
+            for(int i = 0; i < 5; ++i)
+                totalTime += measureTime(bubbleSort, data);
+            cout << "Bubble Sort Avg: " << totalTime / 5 << " sec" << endl;
+
+            // Merge Sort
+            totalTime = 0;
+            for(int i = 0; i < 5; ++i)
+                totalTime += measureTimeMerge(data);
+            cout << "Merge Sort Avg: " << totalTime / 5 << " sec" << endl;
+
+            // Quick Sort
+            totalTime = 0;
+            for(int i = 0; i < 5; ++i)
+                totalTime += measureTimeQuick(data);
+            cout << "Quick Sort Avg: " << totalTime / 5 << " sec" << endl;
+        }
+    }
+}
+
+// -----------------------------
+int main() {
+    srand(time(0));
+    runExperiment();
+    return 0
+};
